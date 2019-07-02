@@ -44,6 +44,8 @@ static void finished_callback(wkhtmltopdf_converter *converter, int p) {
 }
 
 static void cleanup(wkhtmltopdf_converter *converter) {
+    printf("cleanup\n");
+    fflush(stdout);
     wkhtmltopdf_destroy_converter(converter);
     wkhtmltopdf_deinit();
 }
