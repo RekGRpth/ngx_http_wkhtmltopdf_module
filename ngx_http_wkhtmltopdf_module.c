@@ -103,8 +103,6 @@ static void wkhtmltopdf_convert_event_handler(ngx_event_t *ev) {
     const u_char *buf;
     long size = wkhtmltopdf_get_output(ctx->converter, &buf);
     ngx_chain_t out = {.buf = &(ngx_buf_t){.pos = (u_char *)buf, .last = (u_char *)buf + size, .memory = 1, .last_buf = 1}, .next = NULL};
-//    r->headers_out.content_type.len = sizeof("application/pdf") - 1;
-//    r->headers_out.content_type.data = (u_char *)"application/pdf";
     ngx_str_set(&r->headers_out.content_type, "application/pdf");
     r->headers_out.status = NGX_HTTP_OK;
     r->headers_out.content_length_n = size;
