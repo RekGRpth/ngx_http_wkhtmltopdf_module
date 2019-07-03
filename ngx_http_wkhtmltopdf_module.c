@@ -96,7 +96,6 @@ static void wkhtmltopdf_convert_event_handler(ngx_event_t *ev) {
     ngx_http_set_log_request(c->log, r);
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "wkhtmltopdf_convert_event_handler");
     r->main->blocked--;
-//    r->aio = 0;
     const u_char *buf = ctx->url.data;
     long size = ctx->url.len;
 //    const u_char *buf;
@@ -131,7 +130,6 @@ static ngx_int_t ngx_http_wkhtmltopdf_handler(ngx_http_request_t *r) {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_thread_task_post == NGX_OK");
     r->main->blocked++;
     r->count++;
-//    r->aio = 1;
     return NGX_OK;
 }
 
