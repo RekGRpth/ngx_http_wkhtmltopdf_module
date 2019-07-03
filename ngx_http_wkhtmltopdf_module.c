@@ -61,10 +61,10 @@ static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
     ngx_http_request_t *r = ctx->r;
     ngx_connection_t *c = r->connection;
     ngx_http_set_log_request(c->log, r);
-    ngx_log_error(NGX_LOG_ERR, c->log, 0, "wkhtmltopdf_convert_handler");
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "wkhtmltopdf_convert_handler");
     ngx_http_wkhtmltopdf_loc_conf_t *conf = ngx_http_get_module_loc_conf(r, ngx_http_wkhtmltopdf_module);
     if (ngx_http_complex_value(r, conf->url, &ctx->url) != NGX_OK) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "ngx_http_complex_value != NGX_OK"); return; }
-    ngx_log_error(NGX_LOG_ERR, c->log, 0, "url = %V", &ctx->url);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "url = %V", &ctx->url);
     if (ctx->url.data) return;
     wkhtmltopdf_init(0);
     wkhtmltopdf_global_settings *global_settings = wkhtmltopdf_create_global_settings();
@@ -94,7 +94,7 @@ static void wkhtmltopdf_convert_event_handler(ngx_event_t *ev) {
     ngx_http_request_t *r = ctx->r;
     ngx_connection_t *c = r->connection;
     ngx_http_set_log_request(c->log, r);
-    ngx_log_error(NGX_LOG_ERR, c->log, 0, "wkhtmltopdf_convert_event_handler");
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "wkhtmltopdf_convert_event_handler");
     r->main->blocked--;
     r->aio = 0;
     const u_char *buf = ctx->url.data;
@@ -106,14 +106,14 @@ static void wkhtmltopdf_convert_event_handler(ngx_event_t *ev) {
     r->headers_out.status = NGX_HTTP_OK;
     r->headers_out.content_length_n = size;
     ngx_int_t rc = ngx_http_send_header(r);
-    ngx_log_error(NGX_LOG_ERR, c->log, 0, "rc = %i", rc);
+    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "rc = %i", rc);
 //    ngx_http_run_posted_requests(c);
     if (rc == NGX_ERROR || rc > NGX_OK || r->header_only); else rc = ngx_http_output_filter(r, &out);
     ngx_http_finalize_request(r, rc);
 }
 
 static ngx_int_t ngx_http_wkhtmltopdf_handler(ngx_http_request_t *r) {
-    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "ngx_http_wkhtmltopdf_handler");
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_http_wkhtmltopdf_handler");
 //    if (!(r->method & NGX_HTTP_GET)) return NGX_HTTP_NOT_ALLOWED;
 //    ngx_int_t rc = ngx_http_discard_request_body(r);
 //    if (rc != NGX_OK && rc != NGX_AGAIN) return rc;
@@ -128,7 +128,7 @@ static ngx_int_t ngx_http_wkhtmltopdf_handler(ngx_http_request_t *r) {
     task->event.handler = wkhtmltopdf_convert_event_handler;
     task->event.data = ctx;
     if (ngx_thread_task_post(tp, task) != NGX_OK) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "ngx_thread_task_post != NGX_OK"); return NGX_ERROR; }
-    ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "ngx_thread_task_post == NGX_OK");
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_thread_task_post == NGX_OK");
     r->main->blocked++;
     r->aio = 1;
     return NGX_OK;
