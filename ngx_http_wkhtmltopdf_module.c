@@ -51,7 +51,7 @@ static void *wkhtmltopdf_convert_handler_internal(void *data) {
     ngx_http_wkhtmltopdf_loc_conf_t *conf = ngx_http_get_module_loc_conf(r, ngx_http_wkhtmltopdf_module);
     if (ngx_http_complex_value(r, conf->url, &ctx->url) != NGX_OK) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "ngx_http_complex_value != NGX_OK"); goto ret; }
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "url = %V", &ctx->url);
-//    if (ctx->url.data) { sleep(10); ctx->out = ctx->url; goto ret; }
+    if (ctx->url.data) { sleep(10); ctx->out = ctx->url; goto ret; }
     wkhtmltopdf_init(0);
     wkhtmltopdf_global_settings *global_settings = wkhtmltopdf_create_global_settings();
     if (!global_settings) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!global_settings"); goto wkhtmltopdf_deinit; }
