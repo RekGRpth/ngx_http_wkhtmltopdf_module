@@ -91,6 +91,7 @@ static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
     pthread_attr_init(&attr);
     pthread_t tid;
     if (pthread_create(&tid, &attr, wkhtmltopdf_convert_handler_internal, data)) { ngx_log_error(NGX_LOG_ERR, log, 0, "pthread_create"); return; }
+    if (pthread_setname_np(tid, "wkhtmltopdf")) { ngx_log_error(NGX_LOG_ERR, log, 0, "pthread_setname_np"); return; }
     if (pthread_join(tid, NULL)) { ngx_log_error(NGX_LOG_ERR, log, 0, "pthread_join"); return; }
 }
 
