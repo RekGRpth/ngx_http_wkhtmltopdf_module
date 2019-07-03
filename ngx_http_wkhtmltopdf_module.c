@@ -130,6 +130,7 @@ static ngx_int_t ngx_http_wkhtmltopdf_handler(ngx_http_request_t *r) {
     if (ngx_thread_task_post(tp, task) != NGX_OK) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "ngx_thread_task_post != NGX_OK"); return NGX_ERROR; }
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_thread_task_post == NGX_OK");
     r->main->blocked++;
+    r->count++;
 //    r->aio = 1;
     return NGX_OK;
 }
