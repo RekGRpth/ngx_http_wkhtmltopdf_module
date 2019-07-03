@@ -56,7 +56,10 @@ static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
     if (!global_settings) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!global_settings"); goto wkhtmltopdf_deinit; }
     wkhtmltopdf_object_settings *object_settings = wkhtmltopdf_create_object_settings();
     if (!object_settings) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!object_settings"); goto wkhtmltopdf_destroy_global_settings; }
-    wkhtmltopdf_set_object_setting(object_settings, "page", (const char *)ctx->url.data);
+    char *url = ngx_pcalloc(r->pool, ctx->url.len + 1);
+    if (!url) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!url"); goto wkhtmltopdf_destroy_global_settings; }
+    ngx_memcpy(url, ctx->url.data, ctx->url.len);
+    wkhtmltopdf_set_object_setting(object_settings, "page", (const char *)url);
     wkhtmltopdf_converter *converter = wkhtmltopdf_create_converter(global_settings);
     if (!converter) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!converter"); goto wkhtmltopdf_destroy_object_settings; }
     wkhtmltopdf_set_progress_changed_callback(converter, progress_changed_callback);
