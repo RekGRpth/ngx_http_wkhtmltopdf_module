@@ -88,7 +88,11 @@ ret:
 }
 
 static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
-    wkhtmltopdf_convert_handler_internal(data);
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_t tid;
+    if (pthread_create(&tid, &attr, wkhtmltopdf_convert_handler_internal, data)) { ngx_log_error(NGX_LOG_ERR, log, 0, "pthread_create"); return; }
+    if (pthread_join(tid, NULL)) { ngx_log_error(NGX_LOG_ERR, log, 0, "pthread_join"); return; }
 }
 
 static void wkhtmltopdf_convert_event_handler(ngx_event_t *ev) {
