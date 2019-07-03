@@ -113,9 +113,9 @@ static void wkhtmltopdf_convert_event_handler(ngx_event_t *ev) {
 
 static ngx_int_t ngx_http_wkhtmltopdf_handler(ngx_http_request_t *r) {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_http_wkhtmltopdf_handler");
-//    if (!(r->method & NGX_HTTP_GET)) return NGX_HTTP_NOT_ALLOWED;
-//    ngx_int_t rc = ngx_http_discard_request_body(r);
-//    if (rc != NGX_OK && rc != NGX_AGAIN) return rc;
+    if (!(r->method & NGX_HTTP_GET)) return NGX_HTTP_NOT_ALLOWED;
+    ngx_int_t rc = ngx_http_discard_request_body(r);
+    if (rc != NGX_OK && rc != NGX_AGAIN) return rc;
     ngx_http_core_loc_conf_t *conf = ngx_http_get_module_loc_conf(r, ngx_http_core_module);
     ngx_thread_pool_t *tp = conf->thread_pool;
     if (!tp) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!tp"); return NGX_ERROR; }
