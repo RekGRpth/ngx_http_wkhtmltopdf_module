@@ -42,17 +42,17 @@ static void warning_callback(wkhtmltopdf_converter *converter, const char *msg) 
     fflush(stdout);
 }*/
 
-static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
+static void *wkhtmltopdf_convert_handler_internal(void *data) {
     ngx_http_wkhtmltopdf_ctx_t *ctx = data;
     ngx_http_request_t *r = ctx->r;
     ngx_connection_t *c = r->connection;
     ngx_http_set_log_request(c->log, r);
-    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "wkhtmltopdf_convert_handler");
+    ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "wkhtmltopdf_convert_handler_internal");
     ngx_http_wkhtmltopdf_loc_conf_t *conf = ngx_http_get_module_loc_conf(r, ngx_http_wkhtmltopdf_module);
-    if (ngx_http_complex_value(r, conf->url, &ctx->url) != NGX_OK) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "ngx_http_complex_value != NGX_OK"); return; }
+    if (ngx_http_complex_value(r, conf->url, &ctx->url) != NGX_OK) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "ngx_http_complex_value != NGX_OK"); goto ret; }
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "url = %V", &ctx->url);
     sleep(10);
-    if (ctx->url.data) { ctx->out = ctx->url; return; }
+    if (ctx->url.data) { ctx->out = ctx->url; goto ret; }
     wkhtmltopdf_init(0);
     wkhtmltopdf_global_settings *global_settings = wkhtmltopdf_create_global_settings();
     if (!global_settings) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!global_settings"); goto wkhtmltopdf_deinit; }
@@ -83,6 +83,12 @@ wkhtmltopdf_destroy_global_settings:
     wkhtmltopdf_destroy_global_settings(global_settings);
 wkhtmltopdf_deinit:
     wkhtmltopdf_deinit();
+ret:
+    return NULL;
+}
+
+static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
+    wkhtmltopdf_convert_handler_internal(data);
 }
 
 static void wkhtmltopdf_convert_event_handler(ngx_event_t *ev) {
