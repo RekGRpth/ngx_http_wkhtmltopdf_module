@@ -79,7 +79,6 @@ static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
     cln->handler = (ngx_pool_cleanup_pt)cleanup;
     cln->data = converter;
     ctx->converter = converter;
-//    ngx_http_set_ctx(r, converter, ngx_http_wkhtmltopdf_module);
     wkhtmltopdf_set_progress_changed_callback(converter, progress_changed_callback);
     wkhtmltopdf_set_phase_changed_callback(converter, phase_changed_callback);
     wkhtmltopdf_set_error_callback(converter, error_callback);
@@ -106,7 +105,6 @@ static void wkhtmltopdf_convert_event_handler(ngx_event_t *ev) {
     r->headers_out.content_length_n = size;
     ngx_int_t rc = ngx_http_send_header(r);
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "rc = %i", rc);
-//    ngx_http_run_posted_requests(c);
     if (rc == NGX_ERROR || rc > NGX_OK || r->header_only); else rc = ngx_http_output_filter(r, &out);
     ngx_http_finalize_request(r, rc);
 }
