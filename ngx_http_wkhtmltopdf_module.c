@@ -94,9 +94,7 @@ static void wkhtmltopdf_convert_event_handler(ngx_event_t *ev) {
     ngx_http_set_log_request(c->log, r);
     ngx_log_error(NGX_LOG_ERR, c->log, 0, "wkhtmltopdf_convert_event_handler");
     r->main->blocked--;
-//    r->blocked--;
     r->aio = 0;
-//    ngx_str_t url = {sizeof("qwe") - 1, (u_char *)"qwe"};
 //    ngx_str_t url = ngx_string("qwe");
 //    const u_char *buf = url.data;
 //    long size = url.len;
