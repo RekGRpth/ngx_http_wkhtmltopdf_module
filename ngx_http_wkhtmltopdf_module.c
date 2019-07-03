@@ -16,7 +16,7 @@ typedef struct {
 
 ngx_module_t ngx_http_wkhtmltopdf_module;
 
-/*static void progress_changed_callback(wkhtmltopdf_converter *converter, int p) {
+static void progress_changed_callback(wkhtmltopdf_converter *converter, int p) {
     printf("progress_changed_callback: %3d%%\n", p);
     fflush(stdout);
 }
@@ -40,7 +40,7 @@ static void warning_callback(wkhtmltopdf_converter *converter, const char *msg) 
 static void finished_callback(wkhtmltopdf_converter *converter, int p) {
     printf("finished_callback: %3d%%\n", p);
     fflush(stdout);
-}*/
+}
 
 static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
     ngx_http_wkhtmltopdf_ctx_t *ctx = data;
@@ -59,19 +59,17 @@ static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
     wkhtmltopdf_set_object_setting(object_settings, "page", (const char *)ctx->url.data);
     wkhtmltopdf_converter *converter = wkhtmltopdf_create_converter(global_settings);
     if (!converter) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!converter"); goto err; }
-//    wkhtmltopdf_set_progress_changed_callback(converter, progress_changed_callback);
-//    wkhtmltopdf_set_phase_changed_callback(converter, phase_changed_callback);
-//    wkhtmltopdf_set_error_callback(converter, error_callback);
-//    wkhtmltopdf_set_warning_callback(converter, warning_callback);
-//    wkhtmltopdf_set_finished_callback(converter, finished_callback);
+    wkhtmltopdf_set_progress_changed_callback(converter, progress_changed_callback);
+    wkhtmltopdf_set_phase_changed_callback(converter, phase_changed_callback);
+    wkhtmltopdf_set_error_callback(converter, error_callback);
+    wkhtmltopdf_set_warning_callback(converter, warning_callback);
+    wkhtmltopdf_set_finished_callback(converter, finished_callback);
     wkhtmltopdf_add_object(converter, object_settings, NULL);
-    wkhtmltopdf_convert(converter);
-    const u_char *buf;
-    long size = wkhtmltopdf_get_output(converter, &buf);
-    ctx->out.data = ngx_palloc(r->pool, size);
-    if (ctx->out.data) {
-        ctx->out.len = size;
-        ngx_memcpy(ctx->out.data, buf, size);
+    if (!wkhtmltopdf_convert(converter)) ctx->out.data = NULL; else {
+        const u_char *buf;
+        ctx->out.len = wkhtmltopdf_get_output(converter, &buf);
+        ctx->out.data = ngx_palloc(r->pool, ctx->out.len);
+        if (ctx->out.data) ngx_memcpy(ctx->out.data, buf, ctx->out.len);
     }
     wkhtmltopdf_destroy_converter(converter);
 err:
@@ -85,13 +83,16 @@ static void wkhtmltopdf_convert_event_handler(ngx_event_t *ev) {
     ngx_http_set_log_request(c->log, r);
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, c->log, 0, "wkhtmltopdf_convert_event_handler");
     r->main->blocked--;
-    ngx_chain_t out = {.buf = &(ngx_buf_t){.pos = ctx->out.data, .last = ctx->out.data + ctx->out.len, .memory = 1, .last_buf = 1}, .next = NULL};
-    ngx_str_set(&r->headers_out.content_type, "application/pdf");
-    r->headers_out.status = NGX_HTTP_OK;
-    r->headers_out.content_length_n = ctx->out.len;
-    ngx_int_t rc = ngx_http_send_header(r);
-    ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "rc = %i", rc);
-    if (rc == NGX_ERROR || rc > NGX_OK || r->header_only); else rc = ngx_http_output_filter(r, &out);
+    ngx_int_t rc = NGX_ERROR;
+    if (ctx->out.data) {
+        ngx_chain_t out = {.buf = &(ngx_buf_t){.pos = ctx->out.data, .last = ctx->out.data + ctx->out.len, .memory = 1, .last_buf = 1}, .next = NULL};
+        ngx_str_set(&r->headers_out.content_type, "application/pdf");
+        r->headers_out.status = NGX_HTTP_OK;
+        r->headers_out.content_length_n = ctx->out.len;
+        rc = ngx_http_send_header(r);
+        ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "rc = %i", rc);
+        if (rc == NGX_ERROR || rc > NGX_OK || r->header_only); else rc = ngx_http_output_filter(r, &out);
+    }
     ngx_http_finalize_request(r, rc);
 }
 
