@@ -53,12 +53,12 @@ static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, c->log, 0, "url = %V", &ctx->url);
     wkhtmltopdf_init(0);
     wkhtmltopdf_global_settings *global_settings = wkhtmltopdf_create_global_settings();
-    if (!global_settings) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!global_settings"); goto err; }
+    if (!global_settings) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!global_settings"); goto wkhtmltopdf_deinit; }
     wkhtmltopdf_object_settings *object_settings = wkhtmltopdf_create_object_settings();
-    if (!object_settings) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!object_settings"); goto err; }
+    if (!object_settings) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!object_settings"); goto wkhtmltopdf_destroy_global_settings; }
     wkhtmltopdf_set_object_setting(object_settings, "page", (const char *)ctx->url.data);
     wkhtmltopdf_converter *converter = wkhtmltopdf_create_converter(global_settings);
-    if (!converter) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!converter"); goto err; }
+    if (!converter) { ngx_log_error(NGX_LOG_ERR, c->log, 0, "!converter"); goto wkhtmltopdf_destroy_object_settings; }
     wkhtmltopdf_set_progress_changed_callback(converter, progress_changed_callback);
     wkhtmltopdf_set_phase_changed_callback(converter, phase_changed_callback);
     wkhtmltopdf_set_error_callback(converter, error_callback);
@@ -72,7 +72,11 @@ static void wkhtmltopdf_convert_handler(void *data, ngx_log_t *log) {
         if (ctx->out.data) ngx_memcpy(ctx->out.data, buf, ctx->out.len);
     }
     wkhtmltopdf_destroy_converter(converter);
-err:
+wkhtmltopdf_destroy_object_settings:
+    wkhtmltopdf_destroy_object_settings(object_settings);
+wkhtmltopdf_destroy_global_settings:
+    wkhtmltopdf_destroy_global_settings(global_settings);
+wkhtmltopdf_deinit:
     wkhtmltopdf_deinit();
 }
 
