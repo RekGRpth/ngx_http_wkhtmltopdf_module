@@ -8,6 +8,10 @@ typedef struct {
     ngx_http_complex_value_t *html;
 } ngx_http_wkhtmltopdf_loc_conf_t;
 
+typedef struct {
+    wkhtmltopdf_global_settings *global_settings;
+} ngx_http_wkhtmltopdf_main_conf_t;
+
 ngx_module_t ngx_http_wkhtmltopdf_module;
 
 static void progress_changed_callback(wkhtmltopdf_converter *converter, int p) {
@@ -43,20 +47,21 @@ static ngx_int_t ngx_http_wkhtmltopdf_handler(ngx_http_request_t *r) {
     ngx_int_t rc = ngx_http_discard_request_body(r);
     if (rc != NGX_OK && rc != NGX_AGAIN) return rc;
     ngx_http_wkhtmltopdf_loc_conf_t *conf = ngx_http_get_module_loc_conf(r, ngx_http_wkhtmltopdf_module);
+    ngx_http_wkhtmltopdf_main_conf_t *mconf = ngx_http_get_module_main_conf(r, ngx_http_wkhtmltopdf_module);
     rc = NGX_HTTP_INTERNAL_SERVER_ERROR;
     ngx_str_t value, out = {0, NULL};
     if (ngx_http_complex_value(r, conf->html, &value) != NGX_OK) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "ngx_http_complex_value != NGX_OK"); goto ret; }
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "html = %V", &value);
-    if (!wkhtmltopdf_init(0)) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!wkhtmltopdf_init"); goto ret; }
-    wkhtmltopdf_global_settings *global_settings = wkhtmltopdf_create_global_settings();
-    if (!global_settings) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!global_settings"); goto wkhtmltopdf_deinit; }
+//    if (!wkhtmltopdf_init(0)) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!wkhtmltopdf_init"); goto ret; }
+//    wkhtmltopdf_global_settings *global_settings = wkhtmltopdf_create_global_settings();
+    if (!mconf->global_settings) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!global_settings"); goto wkhtmltopdf_deinit; }
     wkhtmltopdf_object_settings *object_settings = wkhtmltopdf_create_object_settings();
     if (!object_settings) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!object_settings"); goto wkhtmltopdf_destroy_global_settings; }
     char *html = ngx_pcalloc(r->pool, value.len + 1);
     if (!html) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!html"); goto wkhtmltopdf_destroy_global_settings; }
     ngx_memcpy(html, value.data, value.len);
     wkhtmltopdf_set_object_setting(object_settings, "page", (const char *)html);
-    wkhtmltopdf_converter *converter = wkhtmltopdf_create_converter(global_settings);
+    wkhtmltopdf_converter *converter = wkhtmltopdf_create_converter(mconf->global_settings);
     if (!converter) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!converter"); goto wkhtmltopdf_destroy_object_settings; }
     wkhtmltopdf_set_progress_changed_callback(converter, progress_changed_callback);
     wkhtmltopdf_set_phase_changed_callback(converter, phase_changed_callback);
@@ -75,9 +80,9 @@ wkhtmltopdf_destroy_converter:
 wkhtmltopdf_destroy_object_settings:
     wkhtmltopdf_destroy_object_settings(object_settings);
 wkhtmltopdf_destroy_global_settings:
-    wkhtmltopdf_destroy_global_settings(global_settings);
+//    wkhtmltopdf_destroy_global_settings(global_settings);
 wkhtmltopdf_deinit:
-    if (!wkhtmltopdf_deinit()) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!wkhtmltopdf_deinit"); goto ret; }
+//    if (!wkhtmltopdf_deinit()) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!wkhtmltopdf_deinit"); goto ret; }
     if (out.data) {
         ngx_chain_t ch = {.buf = &(ngx_buf_t){.pos = out.data, .last = out.data + len, .memory = 1, .last_buf = 1}, .next = NULL};
         ngx_str_set(&r->headers_out.content_type, "application/pdf");
@@ -108,6 +113,16 @@ static ngx_command_t ngx_http_wkhtmltopdf_commands[] = {
     ngx_null_command
 };
 
+static void *ngx_http_wkhtmltopdf_create_main_conf(ngx_conf_t *cf) {
+    ngx_http_wkhtmltopdf_main_conf_t *conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_wkhtmltopdf_main_conf_t));
+    if (!conf) return NGX_CONF_ERROR;
+    return conf;
+}
+
+static char *ngx_http_wkhtmltopdf_init_main_conf(ngx_conf_t *cf, void *conf) {
+    return NGX_CONF_OK;
+}
+
 static void *ngx_http_wkhtmltopdf_create_loc_conf(ngx_conf_t *cf) {
     ngx_http_wkhtmltopdf_loc_conf_t *conf = ngx_pcalloc(cf->pool, sizeof(ngx_http_wkhtmltopdf_loc_conf_t));
     if (!conf) return NGX_CONF_ERROR;
@@ -124,13 +139,29 @@ static char *ngx_http_wkhtmltopdf_merge_loc_conf(ngx_conf_t *cf, void *parent, v
 static ngx_http_module_t ngx_http_wkhtmltopdf_module_ctx = {
     .preconfiguration = NULL,
     .postconfiguration = NULL,
-    .create_main_conf = NULL,
-    .init_main_conf = NULL,
+    .create_main_conf = ngx_http_wkhtmltopdf_create_main_conf,
+    .init_main_conf = ngx_http_wkhtmltopdf_init_main_conf,
     .create_srv_conf = NULL,
     .merge_srv_conf = NULL,
     .create_loc_conf = ngx_http_wkhtmltopdf_create_loc_conf,
     .merge_loc_conf = ngx_http_wkhtmltopdf_merge_loc_conf
 };
+
+static ngx_int_t ngx_http_wkhtmltopdf_init_process(ngx_cycle_t *cycle) {
+//    ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "ngx_http_wkhtmltopdf_init_process");
+    if (!wkhtmltopdf_init(0)) { ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "!wkhtmltopdf_init"); return NGX_ERROR; }
+    ngx_http_wkhtmltopdf_main_conf_t *conf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_wkhtmltopdf_module);
+    if (conf->global_settings) return NGX_OK;
+    if (!(conf->global_settings = wkhtmltopdf_create_global_settings())) { ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "!global_settings"); return NGX_ERROR; }
+    return NGX_OK;
+}
+
+static void ngx_http_wkhtmltopdf_exit_process(ngx_cycle_t *cycle) {
+//    ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "ngx_http_wkhtmltopdf_exit_process");
+    ngx_http_wkhtmltopdf_main_conf_t *conf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_wkhtmltopdf_module);
+    if (conf->global_settings) wkhtmltopdf_destroy_global_settings(conf->global_settings);
+    if (!wkhtmltopdf_deinit()) ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "!wkhtmltopdf_deinit");
+}
 
 ngx_module_t ngx_http_wkhtmltopdf_module = {
     NGX_MODULE_V1,
@@ -139,10 +170,10 @@ ngx_module_t ngx_http_wkhtmltopdf_module = {
     .type = NGX_HTTP_MODULE,
     .init_master = NULL,
     .init_module = NULL,
-    .init_process = NULL,
+    .init_process = ngx_http_wkhtmltopdf_init_process,
     .init_thread = NULL,
     .exit_thread = NULL,
-    .exit_process = NULL,
+    .exit_process = ngx_http_wkhtmltopdf_exit_process,
     .exit_master = NULL,
     NGX_MODULE_V1_PADDING
 };
