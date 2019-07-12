@@ -52,8 +52,6 @@ static ngx_int_t ngx_http_wkhtmltopdf_handler(ngx_http_request_t *r) {
     ngx_str_t value, out = {0, NULL};
     if (ngx_http_complex_value(r, conf->html, &value) != NGX_OK) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "ngx_http_complex_value != NGX_OK"); goto ret; }
     ngx_log_debug1(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "html = %V", &value);
-//    if (!wkhtmltopdf_init(0)) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!wkhtmltopdf_init"); goto ret; }
-//    wkhtmltopdf_global_settings *global_settings = wkhtmltopdf_create_global_settings();
     if (!mconf->global_settings) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!global_settings"); goto wkhtmltopdf_deinit; }
     wkhtmltopdf_object_settings *object_settings = wkhtmltopdf_create_object_settings();
     if (!object_settings) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!object_settings"); goto wkhtmltopdf_destroy_global_settings; }
@@ -80,9 +78,7 @@ wkhtmltopdf_destroy_converter:
 wkhtmltopdf_destroy_object_settings:
     wkhtmltopdf_destroy_object_settings(object_settings);
 wkhtmltopdf_destroy_global_settings:
-//    wkhtmltopdf_destroy_global_settings(global_settings);
 wkhtmltopdf_deinit:
-//    if (!wkhtmltopdf_deinit()) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!wkhtmltopdf_deinit"); goto ret; }
     if (out.data) {
         ngx_chain_t ch = {.buf = &(ngx_buf_t){.pos = out.data, .last = out.data + len, .memory = 1, .last_buf = 1}, .next = NULL};
         ngx_str_set(&r->headers_out.content_type, "application/pdf");
@@ -148,7 +144,6 @@ static ngx_http_module_t ngx_http_wkhtmltopdf_module_ctx = {
 };
 
 static ngx_int_t ngx_http_wkhtmltopdf_init_process(ngx_cycle_t *cycle) {
-//    ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "ngx_http_wkhtmltopdf_init_process");
     if (!wkhtmltopdf_init(0)) { ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "!wkhtmltopdf_init"); return NGX_ERROR; }
     ngx_http_wkhtmltopdf_main_conf_t *conf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_wkhtmltopdf_module);
     if (conf->global_settings) return NGX_OK;
@@ -157,7 +152,6 @@ static ngx_int_t ngx_http_wkhtmltopdf_init_process(ngx_cycle_t *cycle) {
 }
 
 static void ngx_http_wkhtmltopdf_exit_process(ngx_cycle_t *cycle) {
-//    ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "ngx_http_wkhtmltopdf_exit_process");
     ngx_http_wkhtmltopdf_main_conf_t *conf = ngx_http_cycle_get_module_main_conf(cycle, ngx_http_wkhtmltopdf_module);
     if (conf->global_settings) wkhtmltopdf_destroy_global_settings(conf->global_settings);
     if (!wkhtmltopdf_deinit()) ngx_log_error(NGX_LOG_ERR, cycle->log, 0, "!wkhtmltopdf_deinit");
