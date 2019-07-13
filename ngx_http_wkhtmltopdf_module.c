@@ -20,16 +20,16 @@ typedef struct {
 
 ngx_module_t ngx_http_wkhtmltopdf_module;
 
-static void progress_changed_callback(wkhtmltopdf_converter *converter, int p) {
+/*static void progress_changed_callback(wkhtmltopdf_converter *converter, int p) {
     printf("progress_changed_callback: %3d%%\n", p);
     fflush(stdout);
-}
+}*/
 
-static void phase_changed_callback(wkhtmltopdf_converter *converter) {
+/*static void phase_changed_callback(wkhtmltopdf_converter *converter) {
     int phase = wkhtmltopdf_current_phase(converter);
     printf("phase_changed_callback: %s\n", wkhtmltopdf_phase_description(converter, phase));
     fflush(stdout);
-}
+}*/
 
 static void error_callback(wkhtmltopdf_converter *converter, const char *msg) {
     fprintf(stderr, "error_callback: %s\n", msg);
@@ -41,10 +41,10 @@ static void warning_callback(wkhtmltopdf_converter *converter, const char *msg) 
     fflush(stderr);
 }
 
-static void finished_callback(wkhtmltopdf_converter *converter, int p) {
+/*static void finished_callback(wkhtmltopdf_converter *converter, int p) {
     printf("finished_callback: %3d%%\n", p);
     fflush(stdout);
-}
+}*/
 
 static ngx_int_t ngx_http_wkhtmltopdf_handler(ngx_http_request_t *r) {
     ngx_log_debug0(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "ngx_http_wkhtmltopdf_handler");
@@ -67,7 +67,7 @@ static ngx_int_t ngx_http_wkhtmltopdf_handler(ngx_http_request_t *r) {
             char *value = ngx_pcalloc(r->pool, complex_value.len + 1);
             if (!value) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!value"); goto ret; }
             ngx_memcpy(value, complex_value.data, complex_value.len);
-            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "global_settings: %s = %s", name, value);
+//            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "global_settings: %s = %s", name, value);
             if (!wkhtmltopdf_set_global_setting(mconf->global_settings, (const char *)name, (const char *)value)) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!wkhtmltopdf_set_global_setting"); goto ret; }
         }
     }
@@ -86,17 +86,17 @@ static ngx_int_t ngx_http_wkhtmltopdf_handler(ngx_http_request_t *r) {
             char *value = ngx_pcalloc(r->pool, complex_value.len + 1);
             if (!value) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!value"); goto wkhtmltopdf_destroy_object_settings; }
             ngx_memcpy(value, complex_value.data, complex_value.len);
-            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "object_settings: %s = %s", name, value);
+//            ngx_log_debug2(NGX_LOG_DEBUG_HTTP, r->connection->log, 0, "object_settings: %s = %s", name, value);
             if (!wkhtmltopdf_set_object_setting(object_settings, (const char *)name, (const char *)value)) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!wkhtmltopdf_set_object_setting"); goto wkhtmltopdf_destroy_object_settings; }
         }
     }
     wkhtmltopdf_converter *converter = wkhtmltopdf_create_converter(mconf->global_settings);
     if (!converter) { ngx_log_error(NGX_LOG_ERR, r->connection->log, 0, "!converter"); goto wkhtmltopdf_destroy_object_settings; }
-    wkhtmltopdf_set_progress_changed_callback(converter, progress_changed_callback);
-    wkhtmltopdf_set_phase_changed_callback(converter, phase_changed_callback);
+//    wkhtmltopdf_set_progress_changed_callback(converter, progress_changed_callback);
+//    wkhtmltopdf_set_phase_changed_callback(converter, phase_changed_callback);
     wkhtmltopdf_set_error_callback(converter, error_callback);
     wkhtmltopdf_set_warning_callback(converter, warning_callback);
-    wkhtmltopdf_set_finished_callback(converter, finished_callback);
+//    wkhtmltopdf_set_finished_callback(converter, finished_callback);
     wkhtmltopdf_add_object(converter, object_settings, (const char *)NULL);
     if (!wkhtmltopdf_convert(converter)) goto wkhtmltopdf_destroy_converter;
     const unsigned char *data;
